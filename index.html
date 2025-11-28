@@ -41,11 +41,13 @@
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            padding: 3rem 4rem;
+            padding: 2.5rem;
             border-radius: 20px;
             border: 1px solid var(--glass-border);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            width: 320px;
+            /* 使用響應式寬度：視窗 90% 或最大 540px */
+            width: min(90vw, 540px);
+            max-width: 540px;
             position: relative;
         }
 
