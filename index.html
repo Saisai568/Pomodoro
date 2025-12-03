@@ -117,6 +117,14 @@
             height: 1rem;
         }
 
+        .total-time {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            color: var(--text-color);
+            letter-spacing: 1px;
+        }
+
         /* Session Dots */
         .sessions {
             display: flex;
@@ -305,6 +313,95 @@
             margin: 0;
         }
 
+        /* Water Reminder Panel */
+        .water-panel {
+            position: fixed;
+            right: -220px; /* Hide content, show tab */
+            top: 20%;
+            width: 220px;
+            box-sizing: border-box;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-right: none;
+            border-radius: 20px 0 0 20px;
+            padding: 1.5rem;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .water-panel:hover {
+            right: 0;
+        }
+
+        .water-tab {
+            position: absolute;
+            left: -40px;
+            top: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--neon-blue);
+            border-radius: 10px 0 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: -2px 0 10px rgba(0, 243, 255, 0.3);
+            color: #000;
+        }
+
+        .water-content {
+            width: 100%;
+            text-align: left;
+        }
+
+        .water-content h3 {
+            margin: 0 0 1rem 0;
+            color: var(--neon-blue);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            color: #aaa;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            box-sizing: border-box;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+        }
+
+        .water-status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--neon-purple);
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
@@ -314,6 +411,25 @@
     </div>
 
     <button id="lofiBtn" class="mode-toggle" onclick="toggleLofiMode()">Lofi Mode: OFF</button>
+
+    <div class="water-panel">
+        <div class="water-tab">
+            <span>💧</span>
+        </div>
+        <div class="water-content">
+            <h3>Hydration</h3>
+            <div class="input-group">
+                <label>Interval (mins)</label>
+                <input type="number" id="waterInterval" value="30" min="1">
+            </div>
+            <div class="input-group">
+                <label>Amount (ml)</label>
+                <input type="number" id="waterAmount" value="200" min="50">
+            </div>
+            <button onclick="setWaterReminder()">Set Reminder</button>
+            <div class="water-status" id="waterStatus">Next sip: --:--</div>
+        </div>
+    </div>
 
     <div class="container">
         <button id="minimizeBtn" class="window-control" onclick="toggleMinimize()" style="display: none;">−</button>
@@ -330,6 +446,7 @@
             <button class="reset" onclick="resetTimer()">Reset</button>
         </div>
         <div class="status" id="statusText">READY</div>
+        <div class="total-time" id="totalTime">Total Focus: 0s</div>
     </div>
 
     <script>
@@ -337,8 +454,10 @@
         let timerId = null;
         let isWorkTime = true;
         let completedSessions = 0;
+        let totalFocusTime = 0;
         const timerDisplay = document.getElementById('timer');
         const statusText = document.getElementById('statusText');
+        const totalTimeDisplay = document.getElementById('totalTime');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
         const nextBtn = document.getElementById('nextBtn');
@@ -401,6 +520,19 @@
             }
         }
 
+        function updateTotalTimeDisplay() {
+            const hours = Math.floor(totalFocusTime / 3600);
+            const minutes = Math.floor((totalFocusTime % 3600) / 60);
+            const seconds = totalFocusTime % 60;
+            
+            let timeString = "Total Focus: ";
+            if (hours > 0) timeString += `${hours}h `;
+            if (minutes > 0) timeString += `${minutes}m `;
+            timeString += `${seconds}s`;
+            
+            totalTimeDisplay.textContent = timeString;
+        }
+
         function updateDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
@@ -448,6 +580,11 @@
             timerId = setInterval(() => {
                 timeLeft--;
                 updateDisplay();
+
+                if (isWorkTime) {
+                    totalFocusTime++;
+                    updateTotalTimeDisplay();
+                }
 
                 if (timeLeft <= 0) {
                     clearInterval(timerId);
@@ -568,6 +705,49 @@
                     toggleMinimize();
                 }
             }
+        }
+
+        // Water Reminder Logic
+        let waterTimerId = null;
+        let waterTimeLeft = 0;
+        
+        function setWaterReminder() {
+            const intervalInput = document.getElementById('waterInterval');
+            const amountInput = document.getElementById('waterAmount');
+            
+            const minutes = parseInt(intervalInput.value);
+            if (isNaN(minutes) || minutes < 1) {
+                alert("Please enter a valid time interval.");
+                return;
+            }
+
+            if (waterTimerId) clearInterval(waterTimerId);
+            
+            waterTimeLeft = minutes * 60;
+            updateWaterStatus();
+            playClick();
+            
+            waterTimerId = setInterval(() => {
+                waterTimeLeft--;
+                updateWaterStatus();
+                
+                if (waterTimeLeft <= 0) {
+                    playAlarm(); // Reuse alarm sound
+                    alert(`💧 Time to hydrate! Drink ${amountInput.value}ml of water.`);
+                    waterTimeLeft = minutes * 60; // Auto restart cycle
+                }
+            }, 1000);
+        }
+
+        function updateWaterStatus() {
+            const statusDisplay = document.getElementById('waterStatus');
+            if (waterTimeLeft <= 0) {
+                statusDisplay.textContent = "Next sip: --:--";
+                return;
+            }
+            const m = Math.floor(waterTimeLeft / 60);
+            const s = waterTimeLeft % 60;
+            statusDisplay.textContent = `Next sip: ${m}:${s.toString().padStart(2, '0')}`;
         }
 
         // Initialize
