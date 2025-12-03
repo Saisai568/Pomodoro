@@ -127,6 +127,7 @@
         <div class="controls">
             <button id="startBtn" onclick="startTimer()">Start</button>
             <button id="pauseBtn" onclick="pauseTimer()">Pause</button>
+            <button id="nextBtn" onclick="nextSession()" style="display: none;">Next</button>
             <button class="reset" onclick="resetTimer()">Reset</button>
         </div>
         <div class="status" id="statusText">READY</div>
@@ -135,10 +136,12 @@
     <script>
         let timeLeft = 25 * 60; // 25 minutes in seconds
         let timerId = null;
+        let isWorkTime = true;
         const timerDisplay = document.getElementById('timer');
         const statusText = document.getElementById('statusText');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
+        const nextBtn = document.getElementById('nextBtn');
 
         function updateDisplay() {
             const minutes = Math.floor(timeLeft / 60);
@@ -148,11 +151,31 @@
             document.title = `${displayString} - Zen Focus`;
         }
 
+        function updateTheme() {
+            const root = document.documentElement;
+            if (isWorkTime) {
+                root.style.setProperty('--neon-blue', '#00f3ff');
+                root.style.setProperty('--neon-purple', '#bc13fe');
+                document.body.style.backgroundImage = 'linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #141E30)';
+            } else {
+                root.style.setProperty('--neon-blue', '#4ade80');
+                root.style.setProperty('--neon-purple', '#2dd4bf');
+                document.body.style.backgroundImage = 'linear-gradient(-45deg, #134e5e, #71b280, #2c5364, #203a43)';
+            }
+        }
+
         function startTimer() {
             if (timerId) return;
             
-            statusText.textContent = "FOCUSING...";
-            statusText.style.color = "#00f3ff";
+            nextBtn.style.display = "inline-block";
+            updateTheme();
+
+            if (isWorkTime) {
+                statusText.textContent = "FOCUSING...";
+            } else {
+                statusText.textContent = "BREAK TIME";
+            }
+            statusText.style.color = "var(--neon-blue)";
             
             timerId = setInterval(() => {
                 timeLeft--;
@@ -162,9 +185,9 @@
                     clearInterval(timerId);
                     timerId = null;
                     statusText.textContent = "SESSION COMPLETE";
-                    statusText.style.color = "#bc13fe";
+                    statusText.style.color = "var(--neon-purple)";
                     flashScreen();
-                    alert("Time is up! Take a break.");
+                    alert("Time is up!");
                 }
             }, 1000);
         }
@@ -178,11 +201,31 @@
 
         function resetTimer() {
             pauseTimer();
+            isWorkTime = true;
+            updateTheme();
             timeLeft = 25 * 60;
             updateDisplay();
             statusText.textContent = "READY";
             statusText.style.color = "#e0e0e0";
             document.title = "ZEN FOCUS | Cyberpunk Timer";
+            nextBtn.style.display = "none";
+        }
+
+        function nextSession() {
+            const nextMode = isWorkTime ? "Break" : "Focus";
+            if (!confirm(`Ready to switch to ${nextMode} mode?`)) return;
+
+            clearInterval(timerId);
+            timerId = null;
+            isWorkTime = !isWorkTime;
+            
+            if (isWorkTime) {
+                timeLeft = 25 * 60;
+            } else {
+                timeLeft = 5 * 60;
+            }
+            updateDisplay();
+            startTimer();
         }
 
         function flashScreen() {
