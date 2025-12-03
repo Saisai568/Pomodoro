@@ -253,6 +253,58 @@
             pointer-events: auto; /* Allow interaction if autoplay fails */
         }
 
+        /* Minimize Feature */
+        .window-control {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            z-index: 20;
+            flex: none;
+            line-height: 0;
+        }
+
+        .window-control:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .container.minimized {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: auto;
+            min-width: auto;
+            padding: 1.5rem 2rem;
+            margin: 0;
+            /* Override flex centering from body */
+            top: auto;
+            left: auto;
+            transform: none;
+        }
+
+        .container.minimized h1,
+        .container.minimized .controls,
+        .container.minimized .status,
+        .container.minimized .sessions {
+            display: none !important;
+        }
+
+        .container.minimized .timer-display {
+            font-size: 3rem;
+            margin: 0;
+        }
+
     </style>
 </head>
 <body>
@@ -264,6 +316,7 @@
     <button id="lofiBtn" class="mode-toggle" onclick="toggleLofiMode()">Lofi Mode: OFF</button>
 
     <div class="container">
+        <button id="minimizeBtn" class="window-control" onclick="toggleMinimize()" style="display: none;">−</button>
         <h1>Focus Mode</h1>
         <div class="sessions" id="sessions">
             <!-- Dots will be added here -->
@@ -471,12 +524,25 @@
             }, 500);
         }
 
+        function toggleMinimize() {
+            const container = document.querySelector('.container');
+            const btn = document.getElementById('minimizeBtn');
+            container.classList.toggle('minimized');
+            
+            if (container.classList.contains('minimized')) {
+                btn.textContent = '+';
+            } else {
+                btn.textContent = '−';
+            }
+        }
+
         let isLofiMode = false;
         function toggleLofiMode() {
             isLofiMode = !isLofiMode;
             const bg = document.getElementById('lofiBg');
             const video = document.getElementById('lofiVideo');
             const btn = document.getElementById('lofiBtn');
+            const minBtn = document.getElementById('minimizeBtn');
             
             if (isLofiMode) {
                 // Switched to a static video (1 A.M Study Session) to avoid "Video unavailable" or embed errors with the live stream
@@ -487,12 +553,20 @@
                 btn.classList.add('active');
                 // Clear background to ensure video is visible
                 document.body.style.background = 'black';
+                minBtn.style.display = 'flex';
             } else {
                 bg.classList.remove('active');
                 setTimeout(() => { video.src = ""; }, 1000);
                 btn.textContent = "Lofi Mode: OFF";
                 btn.classList.remove('active');
                 updateTheme(); // Restore theme background
+                minBtn.style.display = 'none';
+                
+                // Auto restore if minimized
+                const container = document.querySelector('.container');
+                if (container.classList.contains('minimized')) {
+                    toggleMinimize();
+                }
             }
         }
 
