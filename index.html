@@ -579,6 +579,9 @@
         <div class="room-content" id="roomView" style="display: none;">
             <h3>Live Room</h3>
             <div class="room-code-display" id="currentRoomCode">------</div>
+            <div style="text-align: right; margin-bottom: 5px;">
+                <button onclick="refreshUserList()" style="padding: 2px 8px; font-size: 0.7rem; width: auto; border-radius: 4px;">↻ Sync</button>
+            </div>
             <div class="user-list" id="userList">
                 <!-- Users will be listed here -->
             </div>
@@ -1047,6 +1050,12 @@
             nextBtn.style.display = 'none';
         }
 
+        function refreshUserList() {
+            if (currentRoomId) {
+                socket.emit('refreshUsers', currentRoomId);
+            }
+        }
+
         function showLobby() {
             document.getElementById('roomLobby').style.display = 'block';
             document.getElementById('roomView').style.display = 'none';
@@ -1139,6 +1148,15 @@
                 updateTotalTimeDisplay();
             }
 
+            // Auto-sync user list if count mismatch
+            if (state.userCount !== undefined) {
+                const currentCount = document.querySelectorAll('.user-item').length;
+                if (state.userCount !== currentCount) {
+                    console.log('User count mismatch, requesting sync...');
+                    refreshUserList();
+                }
+            }
+
             updateDisplay();
             updateTheme();
 
@@ -1188,6 +1206,10 @@
         });
 
         socket.on('statusUpdated', ({ users }) => {
+            updateUserList(users);
+        });
+
+        socket.on('usersRefreshed', ({ users }) => {
             updateUserList(users);
         });
 

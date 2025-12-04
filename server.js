@@ -72,7 +72,8 @@ io.on('connection', (socket) => {
                 timeLeft: room.timer.timeLeft,
                 isWorkTime: room.timer.isWorkTime,
                 isRunning: room.timer.isRunning,
-                totalFocusTime: room.timer.totalFocusTime || 0
+                totalFocusTime: room.timer.totalFocusTime || 0,
+                userCount: room.users.length
             });
         };
 
@@ -140,6 +141,12 @@ io.on('connection', (socket) => {
                 user.status = status;
                 io.to(roomId).emit('statusUpdated', { users: rooms[roomId].users });
             }
+        }
+    });
+
+    socket.on('refreshUsers', (roomId) => {
+        if (rooms[roomId]) {
+            socket.emit('usersRefreshed', { users: rooms[roomId].users });
         }
     });
 
